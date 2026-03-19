@@ -6,8 +6,8 @@
 
 #### 对应的成员角色分配：
 
-产品负责人 (PO)：彭昌宇
+产品负责人 (PO)：PCY
 
-Scrum Master (SM)：赵铭宇
+Scrum Master (SM)：ZMY
 
-开发团队 (Dev Team)：雷嘉熙
+开发团队 (Dev Team)：LJX
