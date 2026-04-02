@@ -1,20 +1,54 @@
-# storage.py
-import csv
-import os
+# spider.py
+from bs4 import BeautifulSoup
+import re
+from urllib.parse import urljoin
 
-def save_to_csv(data, filename):
-    if not data: return False
-    try:
-        # 自动创建目录
-        os.makedirs(os.path.dirname(filename) if os.path.dirname(filename) else '.', exist_ok=True)
+class DataParser:
+    def __init__(self, schema):
+        self.schema = schema
+
+    def parse(self, html):
+        if not html: return []
+        soup = BeautifulSoup(html, "html.parser")
+        containers = soup.select(self.schema['container'])
         
-        with open(filename, 'w', newline='', encoding='utf-8-sig') as f:
-            field_map = {'title': '型号', 'price': '价格', 'price_raw': '原始价格', 'score': '评分', 'comments': '评价人数'}
-            writer = csv.DictWriter(f, fieldnames=field_map.keys())
-            # 写入自定义中文表头
-            f.write("型号,价格,原始价格,评分,评价人数\n")
-            writer.writerows(data)
-        return True
-    except Exception as e:
-        print(f"❌ 存储失败: {e}")
-        return False
+        results = []
+        for container in containers:
+            item = {}
+            for f_name, f_rule in self.schema['fields'].items():
+                item[f_name] = self._extract_field(container, f_rule)
+            results.append(item)
+        return results
+
+    def _extract_field(self, container, rule):
+        elem = container.select_one(rule.get('selector'))
+        if not elem: return rule.get('default')
+
+        # 提取逻辑
+        extract_type = rule.get('extract', 'text')
+        raw_value = elem.get(extract_type.split(':')[1]) if extract_type.startswith('attr:') else elem.get_text(strip=True)
+        
+        if not raw_value: return rule.get('default')
+
+        # 融合第二版的正则清理
+        if 'pattern' in rule:
+            match = re.search(rule['pattern'], str(raw_value))
+            if match: raw_value = match.group(1)
+        
+        clean_type = rule.get('clean')
+        if clean_type == 'number':
+            cleaned = re.sub(r'[^\d.]', '', str(raw_value))
+            return float(cleaned) if cleaned else rule.get('default')
+        elif clean_type == 'int':
+            cleaned = re.sub(r'[^\d]', '', str(raw_value))
+            return int(cleaned) if cleaned else rule.get('default')
+        
+        return raw_value
+
+    def get_next_url(self, html, current_url, next_selector):
+        if not html: return None
+        soup = BeautifulSoup(html, "html.parser")
+        next_btn = soup.select_one(next_selector)
+        if next_btn and next_btn.has_attr('href'):
+            return urljoin(current_url, next_btn['href'])
+        return None
