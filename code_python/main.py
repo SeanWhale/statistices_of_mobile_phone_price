@@ -1,42 +1,46 @@
-# main.py:负责整体流程控制
+# main.py
+import sys
 import config
-import spider
 import storage
 import time
-from tqdm import tqdm  
+from network import NetRequester
+from spider import DataParser
+from tqdm import tqdm
 
-def run():
-    print("🚀 正在启动 ZOL 手机行情采集系统...")
-    all_data = []
-    max_pages = 5 # 建议先爬 5 页试试
+def run_cli():
+    print("🚀 [命令行模式] 启动...")
+    req = NetRequester(config.HEADERS)
+    p = DataParser(config.EXTRACTION_SCHEMA)
     
+    all_data = []
+    max_pages = 5
+    next_url = config.BASE_URL
     pbar = tqdm(total=max_pages, desc="🚚 采集进度", unit="页")
     
-    next_url = config.BASE_URL
-    page_count = 1
-    
-    while next_url and page_count <= max_pages:
-        html = spider.get_html(next_url)
-        if not html:
-            break
-            
-        items = spider.parse_books(html)
+    for i in range(max_pages):
+        if not next_url: break
+        html = req.fetch(next_url)
+        if not html: break
+        
+        items = p.parse(html)
         all_data.extend(items)
-        
-        pbar.set_postfix({"已抓取": f"{len(all_data)}条"})
         pbar.update(1)
-        
-        next_url = spider.get_next_page_url(html, next_url)
-        page_count += 1
-        time.sleep(1.5) # 电商站建议稍微慢一点
+        next_url = p.get_next_url(html, next_url, config.PAGINATION['next_selector'])
+        time.sleep(1.5)
 
     pbar.close()
+    if all_data: storage.save_to_csv(all_data, config.OUTPUT_FILE)
+    print(f"✨ 任务完成，共抓取 {len(all_data)} 条。")
 
-    if all_data:
-        storage.save_to_csv(all_data, config.OUTPUT_FILE)
-        print(f"\n✨ 任务圆满完成！")
-    else:
-        print("\n❌ 抓取失败，请检查网络或 config.py 中的选择器。")
+def run_gui():
+    print("🎨 [图形界面模式] 启动...")
+    from gui import CrawlerGUI
+    app = CrawlerGUI()
+    app.mainloop()
 
 if __name__ == "__main__":
-    run()
+    # 如果运行 python main.py --gui 则启动界面，否则跑终端
+    if "--gui" in sys.argv:
+        run_gui()
+    else:
+        run_cli()
