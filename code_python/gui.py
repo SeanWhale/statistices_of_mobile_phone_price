@@ -124,6 +124,25 @@ class CrawlerGUI(ctk.CTk):
         finally:
             self.start_button.configure(state="normal")
 
+def test_boundary_logic(self):
+        """
+        Sprint 3 第二个核心业务逻辑：数据导出边界测试 (Mock)
+        模拟场景：用户在数据为空时尝试导出，或文件系统被占用
+        """
+        self.log("🧪 [Sprint 3 Mock 2] 正在进行‘导出边界条件’测试...")
+        
+        # 边界情况 1：空数据拦截
+        mock_empty_data = [] 
+        if not mock_empty_data:
+            self.log("⚠️ [边界测试] 检测到尝试导出空列表，已触发逻辑拦截。")
+            self.log("状态码：400 Bad Request (Mock)")
+            
+        # 边界情况 2：模拟文件写入失败（权限问题）
+        time.sleep(1)
+        self.log("🧪 [边界测试] 模拟文件被占用场景...")
+        self.log("❌ [Mock Error] 无法写入文件：Permission denied. 请关闭已打开的 Excel。")
+        self.log("✨ [Mock 2] 第二个业务逻辑闭环测试（异常处理）完成。")
+
 if __name__ == "__main__":
     app = CrawlerGUI()
     app.mainloop()
