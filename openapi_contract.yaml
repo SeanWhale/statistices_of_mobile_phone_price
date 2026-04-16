@@ -1,0 +1,49 @@
+openapi: 3.0.0
+info:
+  title: ZOL 手机行情采集系统 API 契约
+  description: 用于前后端解耦的接口规范，定义了爬虫引擎与 GUI 界面之间的数据交换格式。
+  version: 1.0.0
+
+paths:
+  /crawl:
+    get:
+      summary: 触发抓取任务
+      description: 根据输入的起始网址，获取多页手机行情数据。
+      parameters:
+        - name: start_url
+          in: query
+          description: 爬虫的起始网址
+          required: true
+          schema:
+            type: string
+            example: "https://detail.zol.com.cn/cell_phone_index/subcate57_0_list_1.html"
+      responses:
+        '200':
+          description: 抓取成功，返回结构化数据列表
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PhoneItem'
+
+components:
+  schemas:
+    PhoneItem:
+      type: object
+      properties:
+        型号:
+          type: string
+          description: 手机的完整型号名称
+        价格:
+          type: number
+          description: 纯数字格式的价格
+        原始价格:
+          type: string
+          description: 包含货币符号的原始文本
+        评分:
+          type: number
+          description: 手机的综合评分（0-10）
+        评价人数:
+          type: integer
+          description: 参与评价的用户数量
