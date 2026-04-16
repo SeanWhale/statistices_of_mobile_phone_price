@@ -61,33 +61,20 @@ class CrawlerGUI(ctk.CTk):
     def run_crawler(self):
         """核心爬取逻辑 (Sprint 3 契约驱动重构版)"""
         try:
-            # ======= [Sprint 3 任务：Mock 模式开关] =======
-            # 设为 True：测试前端 UI 逻辑是否闭环（无需联网）
-            # 设为 False：运行真实的 ZOL 爬虫
             mock_mode = True 
-
             if mock_mode:
-                self.log("🧪 [Sprint 3 Mock] 正在执行展现层逻辑闭环测试...")
-                self.log("验证依据：openapi_contract.yaml 接口契约")
+                self.log("🧪 [Sprint 3 Mock 2] 正在进行‘导出边界条件’测试...")
+                time.sleep(1.5)
                 
-                # 1. 模拟网络延迟（证明进度条和按钮状态有效）
-                time.sleep(2) 
+                # 模拟场景：后端返回了空数据 (Empty Data 边界)
+                self.log("⚠️ [Mock 契约校验] 后端返回数据为空，触发 400 Bad Request 逻辑。")
                 
-                # 2. 构造完全符合 OpenAPI 契约定义的模拟数据
-                mock_data = [
-                    {"型号": "Mock 测试机-折叠屏 A", "价格": 9999.0, "原始价格": "￥9999", "评分": 10.0, "评价人数": 999},
-                    {"型号": "Mock 测试机-旗舰机 B", "价格": 5999.0, "原始价格": "￥5999", "评分": 9.5, "评价人数": 120}
-                ]
+                # 模拟场景：文件保存冲突 (Permission Denied 边界)
+                self.log("❌ [Mock Error] 导出失败：文件被占用（请先关闭 phones_data.csv）。")
                 
-                # 3. 展现层逻辑闭环：更新 UI、更新进度条、触发存储
-                self.progress_bar.set(1.0) # 模拟进度直接完成
-                self.log(f"✅ [Mock] 成功抓取 {len(mock_data)} 条契约数据。")
-                
-                # 证明存储逻辑也是通的
-                storage.save_to_csv(mock_data, config.OUTPUT_FILE)
-                self.log(f"✨ [Mock] 任务圆满完成！存储路径: {config.OUTPUT_FILE}")
-                
-                return # 执行完 Mock 直接返回，不跑下面的真实逻辑
+                self.progress_bar.set(0.5) # 进度停在中间代表中断
+                self.log("✨ [Mock 2] 第二个业务场景（异常拦截）逻辑闭环验证完成。")
+                return
             # =============================================
 
             # --- 下面是原有的真实爬虫逻辑 ---
