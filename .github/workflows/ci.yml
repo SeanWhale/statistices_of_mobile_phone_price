@@ -1,32 +1,47 @@
-name: Python CI Pipeline
+name: EFR Team Web Crawler CI/CD
 
 on:
   push:
-    branches: [ main, develop ]
-  pull_request:
-    branches: [ main, develop ]
+    branches: [ main ]
 
 jobs:
-  build:
+  build-and-push:
     runs-on: ubuntu-latest
+    # 必须开启写入权限，否则镜像推不上去
+    permissions:
+      contents: read
+      packages: write
+
     steps:
-    - uses: actions/checkout@v3
-    - name: Set up Python 3.11
+    - name: Checkout Code
+      uses: actions/checkout@v3
+
+    - name: Set up Python
       uses: actions/setup-python@v3
       with:
         python-version: "3.11"
+
     - name: Install dependencies
       run: |
-        python -m pip install --upgrade pip
-        # 安装项目需要的库
-        pip install requests beautifulsoup4 tqdm pytest flake8
-        # 注意：customtkinter 在 Linux 服务器上无法安装（因为它需要图形界面库），
-        # 在 CI 测试中我们通常跳过它，或者只测试逻辑部分。
-    - name: Lint with flake8
+        pip install -r requirements.txt fastapi uvicorn httpx pytest
+
+    - name: Run Integration Tests
       run: |
-        # 告诉 flake8 去检查 code_python 文件夹
-        flake8 code_python --count --select=E9,F63,F7,F82 --show-source --statistics
-    - name: Run Unit Tests
-      run: |
-        # 告诉 pytest 去 code_python 文件夹运行测试
-        pytest code_python || echo "No tests found, but environment is OK"
+        # 验证 API 是否健康
+        python -m pytest code_python/test_api.py
+
+    # ---  核心：由 GitHub 代替你的本地 Docker 进行构建 ---
+    - name: Log in to GHCR (GitHub Container Registry)
+      uses: docker/login-action@v2
+      with:
+        registry: ghcr.io
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Build and Push Docker Image
+      uses: docker/build-push-action@v4
+      with:
+        context: .
+        push: true
+        # 镜像名字会自动变为: ghcr.io/你的用户名/仓库名:latest
+        tags: ghcr.io/${{ github.repository }}:latest

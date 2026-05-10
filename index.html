@@ -1,0 +1,29 @@
+<!-- index.html -->
+<!DOCTYPE html>
+<html>
+<head><title>ZOL 采集系统 Web版</title></head>
+<body>
+    <h1>EFR 队：行情采集系统</h1>
+    <input type="text" id="targetUrl" value="https://detail.zol.com.cn/..." style="width:400px">
+    <button onclick="doCrawl()">一键抓取</button>
+    <div id="loading" style="display:none">🚚 搬运中...</div>
+    <table id="resultTable" border="1"></table>
+
+    <script>
+        async function doCrawl() {
+            document.getElementById('loading').style.display = 'block';
+            const url = document.getElementById('targetUrl').value;
+            // 调用我们刚写的 FastAPI 接口
+            const response = await fetch(`http://127.0.0.1:8000/api/crawl?url=${encodeURIComponent(url)}`);
+            const json = await response.json();
+            
+            let html = '<tr><th>型号</th><th>价格</th></tr>';
+            json.data.forEach(item => {
+                html += `<tr><td>${item.title}</td><td>${item.price}</td></tr>`;
+            });
+            document.getElementById('resultTable').innerHTML = html;
+            document.getElementById('loading').style.display = 'none';
+        }
+    </script>
+</body>
+</html>

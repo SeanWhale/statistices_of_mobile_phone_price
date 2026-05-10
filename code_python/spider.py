@@ -24,24 +24,32 @@ class DataParser:
         elem = container.select_one(rule.get('selector'))
         if not elem: return rule.get('default')
 
-        # 提取逻辑
         extract_type = rule.get('extract', 'text')
         raw_value = elem.get(extract_type.split(':')[1]) if extract_type.startswith('attr:') else elem.get_text(strip=True)
         
         if not raw_value: return rule.get('default')
 
-        # 融合第二版的正则清理
         if 'pattern' in rule:
             match = re.search(rule['pattern'], str(raw_value))
             if match: raw_value = match.group(1)
         
         clean_type = rule.get('clean')
-        if clean_type == 'number':
-            cleaned = re.sub(r'[^\d.]', '', str(raw_value))
-            return float(cleaned) if cleaned else rule.get('default')
-        elif clean_type == 'int':
-            cleaned = re.sub(r'[^\d]', '', str(raw_value))
-            return int(cleaned) if cleaned else rule.get('default')
+        
+        # --- 核心修正逻辑开始 ---
+        if clean_type in ['number', 'int']:
+            # 1. 先去掉千分位逗号 (例如 5,999.00 -> 5999.00)
+            cleaned = str(raw_value).replace(',', '')
+            # 2. 正则保留：数字、小数点、负号。去掉其它所有杂质 (如 $ ￥)
+            cleaned = re.sub(r'[^\d.-]', '', cleaned)
+            
+            if not cleaned or cleaned == '.': return rule.get('default')
+            
+            try:
+                val_float = float(cleaned)
+                return int(val_float) if clean_type == 'int' else val_float
+            except (ValueError, TypeError):
+                return rule.get('default')
+        # --- 核心修正逻辑结束 ---
         
         return raw_value
 
